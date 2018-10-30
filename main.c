@@ -33,6 +33,20 @@ int main() {
 
     }
 
+    switch( mode ){
+
+        case d:
+            // run duplicate action
+
+        case s:
+            //return sync action
+
+        default:
+            //error
+
+    }
+
+    //final output
     return 0;
 }
 
