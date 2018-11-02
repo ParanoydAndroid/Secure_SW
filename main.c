@@ -8,16 +8,18 @@ char* filePath;
 char* paths[2];
 
 
-int getMode(char *string);
-int validateMode(char* input, char* output);
+int getMode( char* string );
+
+int validateMode( char* input, char* output );
+
 int getPaths( char** path );
+
 int validatePath( char* input );
 
 void initialize();
 
 
-
-int main() {
+int main(){
 
     initialize();
 
@@ -27,15 +29,15 @@ int main() {
     char* paths[2];
     getPaths( paths );
 
-    if ( 0 == strcmp(&mode, "s") ){
+    if( 0 == strcmp( &mode, "s" )){
 
         //return sync action
 
-    } else if( 0 == strcmp(&mode, "d") ){
+    } else if( 0 == strcmp( &mode, "d" )){
 
         //return duplicate action
 
-    } else {
+    } else{
 
         //error
     }
@@ -50,9 +52,9 @@ int getMode( char* mode ){
 
     char input[2];
 
-    if ( NULL == fgets( input, 2, stdin ) ){
+    if( NULL == fgets( input, 2, stdin )){
 
-        perror( "Error Invalid Input:  Please Enter a single character");
+        perror( "Error Invalid Input:  Please Enter a single character" );
         return 0;
     }
 
@@ -60,7 +62,7 @@ int getMode( char* mode ){
 
     if( 1 == validateMode( input, mode )){
 
-        printf("mode succesfully validated.  Mode is: %s", mode);
+        printf( "mode succesfully validated.  Mode is: %s", mode );
         return 1;
     }
 
@@ -68,7 +70,7 @@ int getMode( char* mode ){
     return 0;
 }
 
-void initialize() {
+void initialize(){
 
     //make folders if not exist
     //make files if not exist
@@ -78,11 +80,11 @@ void initialize() {
 int validateMode( char* input, char* output ){
 
 
-    char mode = (char)tolower( input[0] );
+    char mode = (char) tolower( input[ 0 ] );
 
-    if( 0 != strcmp(&mode, "s") && 0 != strcmp(&mode, "d") ){
+    if( 0 != strcmp( &mode, "s" ) && 0 != strcmp( &mode, "d" )){
 
-        perror( "Error Invalid Input:  Only enter 'D', 'S', 'd', or 's' (without the quotes)");
+        perror( "Error Invalid Input:  Only enter 'D', 'S', 'd', or 's' (without the quotes)" );
         return 1;
     }
 
@@ -93,8 +95,29 @@ int validateMode( char* input, char* output ){
 
 int validatePath( char* input ){
 
-    char* path = input;
+    char invalidSymbols[1] = {'\0'};
     // if exists file and sanitize, return path or null
+
+    char* token = input;
+    int sentinel = 0;
+    char* pathComponents[2];
+
+    while( token != NULL ){
+        strsep(&token, "/");
+
+        // We explicitly only need to care about one step deeper into the file hierarchy
+        // so I don't have to malloc this.
+        if ( 2 > sentinel ){
+            pathComponents[sentinel] = token;
+            sentinel++;
+        } else {
+            // This means strsep is not yet null, yet we've found another token past the first
+            // two,  this is invalid
+
+            perror("Invalid input:  Malformed path");
+            return 1;
+        }
+    }
 
     return 0;
 }
@@ -106,20 +129,20 @@ int getPaths( char** paths ){
 
     while( 2 > sentinel ){
 
-        if( NULL == fgets( input, sizeof( input ), stdin) ){
-            perror( "Error Invalid Input:  Please enter a valid path");
+        if( NULL == fgets( input, sizeof( input ), stdin )){
+            perror( "Error Invalid Input:  Please enter a valid path" );
             continue;
         }
 
-        fgets( input, sizeof( input ), stdin);
+        fgets( input, sizeof( input ), stdin );
 
         if( 1 == validatePath( input )){
 
-            perror( "Error Invalid Input:  Please enter a valid path");
+            perror( "Error Invalid Input:  Please enter a valid path" );
             continue;
         }
 
-        paths[sentinel] = input;
+        paths[ sentinel ] = input;
         sentinel++;
     }
 
