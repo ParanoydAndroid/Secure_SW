@@ -8,33 +8,24 @@ char* filePath;
 char* paths[2];
 
 
-int validateMode(char* input);
-char* validatePath( char* input );
+int getMode(char *string);
+int validateMode(char* input, char* output);
+int getPaths( char** path );
+int validatePath( char* input );
 
 void initialize();
 
-int getMode(char *string);
+
 
 int main() {
 
     initialize();
 
     char mode;
+    getMode( &mode );
 
-    getmode( &mode );
-
-
-    int sentinel = 0;
-    while( 2 > sentinel ){
-
-        printf( "Enter file path %d to edit", sentinel+1 );
-        if( NULL != validatePath( filePath )){
-
-            paths[sentinel] = validatePath( filePath );
-            sentinel++;
-        }
-
-    }
+    char* paths[2];
+    getPaths( paths );
 
     if ( 0 == strcmp(&mode, "s") ){
 
@@ -48,7 +39,6 @@ int main() {
 
         //error
     }
-
 
     //final output
     return 0;
@@ -68,8 +58,9 @@ int getMode( char* mode ){
 
     fgets( input, 2, stdin );
 
-    if( 1 == validateMode( input, mode ){
+    if( 1 == validateMode( input, mode )){
 
+        printf("mode succesfully validated.  Mode is: %s", mode);
         return 1;
     }
 
@@ -99,16 +90,37 @@ int validateMode( char* input, char* output ){
     return 0;
 }
 
-int validatePath( char* input, char* output ){
 
-    if ( NULL == fgets( input, sizeof(input), stdin ) ){
-
-        perror( "Error Invalid Input:  Please Enter a valid path");
-        exit( EXIT_FAILURE );
-    }
+int validatePath( char* input ){
 
     char* path = input;
     // if exists file and sanitize, return path or null
 
-    return path;
+    return 0;
+}
+
+int getPaths( char** paths ){
+
+    char input[1024];
+    int sentinel = 0;
+
+    while( 2 > sentinel ){
+
+        if( NULL == fgets( input, sizeof( input ), stdin) ){
+            perror( "Error Invalid Input:  Please enter a valid path");
+            continue;
+        }
+
+        fgets( input, sizeof( input ), stdin);
+
+        if( 1 == validatePath( input )){
+
+            perror( "Error Invalid Input:  Please enter a valid path");
+            continue;
+        }
+
+        paths[sentinel] = input;
+        sentinel++;
+    }
+
 }
