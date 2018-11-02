@@ -4,24 +4,27 @@
 #include <string.h>
 
 
-char buf[2];
 char* filePath;
 char* paths[2];
 
-char validateMode(char* input);
+
+int validateMode(char* input);
 char* validatePath( char* input );
 
 void initialize();
+
+int getMode(char *string);
 
 int main() {
 
     initialize();
 
-    printf("Enter file mode [S/D]: ");
-    validateMode( buf );
+    char mode;
+
+    getmode( &mode );
+
 
     int sentinel = 0;
-
     while( 2 > sentinel ){
 
         printf( "Enter file path %d to edit", sentinel+1 );
@@ -33,20 +36,44 @@ int main() {
 
     }
 
-    switch( mode ){
+    if ( 0 == strcmp(&mode, "s") ){
 
-        case d:
-            // run duplicate action
+        //return sync action
 
-        case s:
-            //return sync action
+    } else if( 0 == strcmp(&mode, "d") ){
 
-        default:
-            //error
+        //return duplicate action
 
+    } else {
+
+        //error
     }
 
+
     //final output
+    return 0;
+}
+
+int getMode( char* mode ){
+    //On success, returns 0 and stores mode in char* mode
+    //On fail returns 1 and the mode contents are not defined
+
+    char input[2];
+
+    if ( NULL == fgets( input, 2, stdin ) ){
+
+        perror( "Error Invalid Input:  Please Enter a single character");
+        return 0;
+    }
+
+    fgets( input, 2, stdin );
+
+    if( 1 == validateMode( input, mode ){
+
+        return 1;
+    }
+
+    validateMode( input, mode );
     return 0;
 }
 
@@ -57,26 +84,22 @@ void initialize() {
     //print out file/folder options
 }
 
-char validateMode( char* input ){
+int validateMode( char* input, char* output ){
 
-    if ( NULL == fgets( input, 2, stdin ) ){
 
-        perror( "Error Invalid Input:  Please Enter a single character");
-        exit( EXIT_FAILURE );
-    }
-
-    char mode = tolower(buf[1]);
+    char mode = (char)tolower( input[0] );
 
     if( 0 != strcmp(&mode, "s") && 0 != strcmp(&mode, "d") ){
 
         perror( "Error Invalid Input:  Only enter 'D', 'S', 'd', or 's' (without the quotes)");
-        exit( EXIT_FAILURE );
+        return 1;
     }
 
-    return mode;
+    *output = mode;
+    return 0;
 }
 
-char* validatePath( char* input ){
+int validatePath( char* input, char* output ){
 
     if ( NULL == fgets( input, sizeof(input), stdin ) ){
 
