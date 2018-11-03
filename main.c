@@ -6,13 +6,14 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
+const int MAX_PATH_LENGTH = 256;
 
 int exists( char* file );
 int getMode( char* mode );
-int getPaths( char** paths );
+int getPaths( char paths[2][MAX_PATH_LENGTH] );
 void initialize();
 int validateMode( char* input, char* output );
-int validatePath( char* input );
+int validatePath( char* input, char parsedPath[2][MAX_PATH_LENGTH] );
 
 int main(){
 
@@ -20,7 +21,7 @@ int main(){
 
     char mode;
     int notDone;
-    char* paths[2];
+    char paths[2][256];
 
     do{
 
@@ -59,15 +60,15 @@ int exists( char* file ){
 
 int getMode( char* mode ){
     //On success, returns 0 and stores mode in char* mode
-    //On fail returns 1 and the mode contents are not defined
+    //On fail returns 1 and the contents of mode are not defined
 
     char input[3];
 
-    printf( "Please enter file mode [D/S]: " );
-    if( NULL == fgets( input, sizeof(input), stdin )){
+    printf( "\nPlease enter file mode [D/S]: " );
+    if( NULL == fgets( input, sizeof( input ), stdin )){
 
-        perror( "Error Invalid Input:  Please Enter a single character" );
-        return 0;
+        perror( "Please Enter a single character" );
+        return 1;
     }
 
     if( 1 == validateMode( input, mode )){
@@ -76,7 +77,7 @@ int getMode( char* mode ){
         return 1;
     }
 
-    printf( "mode successfully validated.  Mode is: %s\n", mode );
+    printf( "Mode successfully validated.  Mode is: %s\n", mode );
     return 0;
 }
 
@@ -114,7 +115,6 @@ int validateMode( char* input, char* output ){
 
     if( 0 != strcmp( &mode, "s" ) && 0 != strcmp( &mode, "d" )){
 
-        perror( "Error Invalid Input:  Only enter 'D', 'S', 'd', or 's' (without the quotes)" );
         return 1;
     }
 
@@ -123,22 +123,23 @@ int validateMode( char* input, char* output ){
 }
 
 
-int validatePath( char* input ){
+int validatePath( char* input, char parsedPath[2][256] ){
 
     char invalidSymbols[1] = {'\0'};
     // if exists file and sanitize, return path or null
 
     char* token = input;
     int sentinel = 0;
-    char* pathComponents[2];
 
     while( token != NULL){
-        strsep( &token, "/" );
+
+        char* temptok = strsep( &token, "/" );
 
         // We explicitly only need to care about one step deeper into the file hierarchy
         // so I don't have to malloc this.
         if( 2 > sentinel ){
-            pathComponents[ sentinel ] = token;
+
+            strcpy(parsedPath[ sentinel ], temptok);
             sentinel++;
 
         } else {
@@ -146,39 +147,52 @@ int validatePath( char* input ){
             // This means strsep is not yet null, yet we've found another token past the first
             // two,  this is invalid
 
-            perror( "Invalid input:  Malformed path" );
             return 1;
         }
     }
 
     // Now we check to ensure that we found at least one "/" (i.e. at least two tokens)
+    if( sentinel < 2 ){
+
+        return 1;
+    }
 
     return 0;
 }
 
-int getPaths( char** paths ){
+int getPaths( char paths[2][MAX_PATH_LENGTH] ){
     // On success, returns 0 and stores both file paths in *paths.
     // On fail returns 1 and the contents of **paths is not defined
 
-    char input[1024];
+    char input[MAX_PATH_LENGTH];
     int sentinel = 0;
+    char parsedPaths[2][MAX_PATH_LENGTH];
 
     while( 2 > sentinel ){
 
-        printf( "Enter File path %i: ", sentinel + 1);
+        printf( "Enter File path %i: ", sentinel + 1 );
         if( NULL == fgets( input, sizeof( input ), stdin )){
             perror( "Please enter a valid path (dir1/someFile.ext)" );
             continue;
         }
 
-        if( 1 == validatePath( input )){
+        if( 1 == validatePath( input, parsedPaths)){
 
             perror( "Please enter a valid path (dir1/someFile.ext)" );
             continue;
         }
 
-        paths[ sentinel ] = input;
+//        char str[MAX_PATH_LENGTH];
+//        snprintf(str, sizeof(str), "%s/%s", parsedPaths[0], parsedPaths[1]);
+
+        // Now that we have a valid, parsed path, we reconstitute it.
+        snprintf(paths[sentinel], sizeof(paths[sentinel]), "%s/%s", parsedPaths[0], parsedPaths[1]);
+
+        //then we strip the trailing newline.
+        paths[sentinel][strcspn(paths[sentinel], "\n")] = 0;
+        printf("Paths[%i]: %s", sentinel, paths[sentinel]);
         sentinel++;
     }
 
+    return 0;
 }
