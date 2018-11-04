@@ -12,13 +12,18 @@ const int MAX_PATH_LENGTH = 256;
 int exists( char* file );
 int getMode( char* mode );
 int getPaths( char paths[2][MAX_PATH_LENGTH] );
-void initialize();
+void initialize( char* directories[], size_t arrLength );
 int validateMode( char* input, char* output );
 int validatePath( char* input, char parsedPath[2][MAX_PATH_LENGTH] );
 
+void syncDirs( char string[256], char string1[256] );
+
+void listDirs();
+
 int main(){
 
-    initialize();
+    char* directories[3] = {"dir1", "dir2", "dir3"};
+    initialize( directories, sizeof( directories ) / sizeof( directories[0] ));
 
     char mode;
     int notDone;
@@ -36,28 +41,30 @@ int main(){
 
         case (int) 'd':
 
-            printf( "case d" );
+            printf( "case d\n" );
 
             // I guess just read directory and then try to delete every file found, accounting for "."
             break;
 
         case (int) 's':
 
-            printf( "case s" );
-
-            // Pretty easy, see note in iniliazation about this.
+            //We call it twice to sync in both directions
+            syncDirs( paths[0], paths[1] );
+            syncDirs( paths[1], paths[0] );
             break;
 
         default:
 
             perror( "Unknown error" );
-            break;
-
+            exit( EXIT_FAILURE );
     }
 
-    //final output
+    char* modeName = mode == 'd' ? "De-duplication" : "Synchronization";
+    printf( "%s complete: \n", modeName );
+    listDirs();
     return 0;
 }
+
 
 int exists( char* file ){
 
@@ -117,25 +124,22 @@ int getPaths( char paths[2][MAX_PATH_LENGTH] ){
             continue;
         }
 
-        // Now that we have a valid, parsed path, we reconstitute it.
-        snprintf( paths[sentinel], sizeof( paths[sentinel] ), "%s/%s", parsedPaths[0], parsedPaths[1] );
-
-        // TODO: Remove
-        printf( "Paths[%i]: %s\n", sentinel, paths[sentinel] );
+        // Now that we have a valid, parsed path, we discard home (since we don't need it) and keep the directory
+        // home is initially processed for future expansion, if necessary.
+        snprintf( paths[sentinel], sizeof( paths[sentinel] ), "%s", parsedPaths[1] );
         sentinel++;
     }
 
     return 0;
 }
 
-void initialize(){
+void initialize( char* directories[], size_t arrLength ){
 
-    char* directories[3] = {"dir1", "dir2", "dir3"};
     char* filePaths[9] = {"dir1/a.txt", "dir1/b.txt", "dir1/c.txt",
                           "dir2/c.txt", "dir2/d.txt", "dir2/e.txt",
                           "dir3/e.txt", "dir3/f.txt", "dir3/a.txt"};
 
-    for( int i = 0; i < sizeof( directories ) / sizeof( directories[0] ); i++ ){
+    for( int i = 0; i < arrLength; i++ ){
 
         // We can ignore errors here, since an error (probably) just tells the the dir already exists, which is fine.
         mkdir( directories[i], ACCESSPERMS);
@@ -156,6 +160,38 @@ void initialize(){
         FILE* file = fopen( filePaths[i], "w+" );
         fclose( file );
     }
+
+}
+
+void listDirs(){
+
+}
+
+void syncDirs( char source[256], char target[256] ){
+
+    // Also note this is basically the sync loop.  For NULL != readdir(paths[1]], if exists then continue, else fopen
+    printf( "Synchronizing home/%s and home/%s...\n", source, target );
+
+    DIR* dir;
+    struct dirent* dent;
+
+    dir = opendir( source );
+    while(( dent = readdir( dir )) != NULL){
+
+        char fullPath[MAX_PATH_LENGTH];
+        snprintf( fullPath, sizeof( fullPath ), "%s/%s", target, ( dent->d_name ));
+
+        if( exists( fullPath ) || 0 == strcmp("..", fullPath) || 0 == strcmp(".", fullPath)){
+            continue;
+        }
+
+        // We call fopen to create the file, then immediately close the handle because we don't actually want it open.
+        FILE* file = fopen( fullPath, "w+" );
+        fclose( file );
+
+
+    }
+
 
 }
 
@@ -218,8 +254,6 @@ int validatePath( char* input, char parsedPath[2][256] ){
         strcpy( parseCheck, parsedPath[i] );
         char* temp = strsep( &parseCheck, invalidSymbols );
 
-        // TODO: Don't forge to remove this.
-        printf( "%s\n", temp );
         if( 0 != strcmp( parsedPath[i], temp )){
 
             // Our string that parsed on invalid symbols found some, so it was an invalid path provided to us
@@ -228,7 +262,6 @@ int validatePath( char* input, char parsedPath[2][256] ){
     }
 
     // Finally, we check to ensure the referenced directories actually exist.
-
     if( 0 != strcmp( parsedPath[0], "home" )){
 
         return 1;
