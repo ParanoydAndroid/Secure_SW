@@ -70,6 +70,7 @@ int exists( char* file ){
 }
 
 int getMode( char* mode ){
+
     //On success, returns 0 and stores mode in char* mode
     //On fail returns 1 and the contents of mode are not defined
 
@@ -93,10 +94,49 @@ int getMode( char* mode ){
     return 0;
 }
 
+int getPaths( char paths[2][MAX_PATH_LENGTH] ){
+    // On success, returns 0 and stores both file paths in *paths.
+    // On fail returns 1 and the contents of **paths is not defined
+
+    char input[MAX_PATH_LENGTH];
+    int sentinel = 0;
+    char parsedPaths[2][MAX_PATH_LENGTH];
+
+    while( 2 > sentinel ){
+
+        printf( "Enter File path %i: ", sentinel + 1 );
+        if( NULL == fgets( input, sizeof( input ), stdin )){
+            perror( "Please enter a valid path (home/exampleDir" );
+            continue;
+        }
+
+        if( 1 == validatePath( input, parsedPaths )){
+
+            perror( "Please enter a valid path (home/exampleDir)" );
+            continue;
+        }
+
+//        char str[MAX_PATH_LENGTH];
+//        snprintf(str, sizeof(str), "%s/%s", parsedPaths[0], parsedPaths[1]);
+
+        // Now that we have a valid, parsed path, we reconstitute it.
+        snprintf( paths[sentinel], sizeof( paths[sentinel] ), "%s/%s", parsedPaths[0], parsedPaths[1] );
+
+        //then we strip the trailing newline.
+        paths[sentinel][strcspn( paths[sentinel], "\n" )] = 0;
+        printf( "Paths[%i]: %s\n", sentinel, paths[sentinel] );
+        sentinel++;
+    }
+
+    return 0;
+}
+
 void initialize(){
 
-    char* directories[2] = {"dir1", "dir2"};
-    char* filePaths[4] = {"dir1/a.txt", "dir1/b.txt", "dir2/c.txt", "dir2/d.txt"};
+    char* directories[3] = {"dir1", "dir2", "dir3"};
+    char* filePaths[12] = {"dir1/a.txt", "dir1/b.txt", "dir1/c.txt",
+                           "dir2/c.txt", "dir2/d.txt", "dir2/e.txt",
+                           "dir3/e.txt", "dir3/f.txt", "dir3/a.txt"};
 
     for( int i = 0; i < sizeof( directories ) / sizeof( directories[0] ); i++ ){
 
@@ -104,13 +144,12 @@ void initialize(){
         mkdir( directories[i], ACCESSPERMS);
     }
 
-    // TODO: Change listing to show directories and then files, and make it clear how to type the format.
     // Also note this is basically the sync loop.  For NULL != readdir(paths[1]], if exists then continue, else fopen
     printf( "Current directories and contents that are available for modification:\n" );
 
     for( int i = 0; i < sizeof( filePaths ) / sizeof( filePaths[0] ); i++ ){
 
-        printf( "%s\n", filePaths[i] );
+        printf( "home/%s\n", filePaths[i] );
 
         if( exists( filePaths[i] )){
             continue;
@@ -136,7 +175,6 @@ int validateMode( char* input, char* output ){
     return 0;
 }
 
-
 int validatePath( char* input, char parsedPath[2][256] ){
 
     char* invalidSymbols = "\n\r\0";
@@ -152,8 +190,7 @@ int validatePath( char* input, char parsedPath[2][256] ){
         // so I can use a static array instead of generecizing with a malloc()
         if( 2 > sentinel ){
 
-            // TODO: Strip the newlines here, and remove that from the getPath method.
-            // I think I can do this by doing the span trick on temptok.
+            temptok[strcspn( temptok, "\n" )] = 0;
             strcpy( parsedPath[sentinel], temptok );
             sentinel++;
 
@@ -198,43 +235,6 @@ int validatePath( char* input, char parsedPath[2][256] ){
     if( opendir( parsedPath[1] ) == NULL){
 
         return 1;
-    }
-
-    return 0;
-}
-
-int getPaths( char paths[2][MAX_PATH_LENGTH] ){
-    // On success, returns 0 and stores both file paths in *paths.
-    // On fail returns 1 and the contents of **paths is not defined
-
-    char input[MAX_PATH_LENGTH];
-    int sentinel = 0;
-    char parsedPaths[2][MAX_PATH_LENGTH];
-
-    while( 2 > sentinel ){
-
-        printf( "Enter File path %i: ", sentinel + 1 );
-        if( NULL == fgets( input, sizeof( input ), stdin )){
-            perror( "Please enter a valid path (home/exampleDir" );
-            continue;
-        }
-
-        if( 1 == validatePath( input, parsedPaths )){
-
-            perror( "Please enter a valid path (home/exampleDir)" );
-            continue;
-        }
-
-//        char str[MAX_PATH_LENGTH];
-//        snprintf(str, sizeof(str), "%s/%s", parsedPaths[0], parsedPaths[1]);
-
-        // Now that we have a valid, parsed path, we reconstitute it.
-        snprintf( paths[sentinel], sizeof( paths[sentinel] ), "%s/%s", parsedPaths[0], parsedPaths[1] );
-
-        //then we strip the trailing newline.
-        paths[sentinel][strcspn( paths[sentinel], "\n" )] = 0;
-        printf( "Paths[%i]: %s\n", sentinel, paths[sentinel] );
-        sentinel++;
     }
 
     return 0;
