@@ -120,8 +120,7 @@ int getMode( char* mode ){
         return 1;
     }
 
-    snprintf( mode, sizeof( mode ), "%c", mode[0] );
-    printf( "Mode successfully validated.  Mode is: %s\n", mode );
+    printf( "Mode successfully validated.  Mode is: %c\n", mode[0] );
     return 0;
 }
 
@@ -166,7 +165,7 @@ void initialize( char* directories[], size_t arrLength ){
     for( int i = 0; i < arrLength; i++ ){
 
         // We can ignore errors here, since an error (probably) just tells the the dir already exists, which is fine.
-        mkdir( directories[i], ACCESSPERMS);
+        mkdir( directories[i], S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     }
 
     for( int i = 0; i < sizeof( filePaths ) / sizeof( filePaths[0] ); i++ ){
@@ -180,7 +179,7 @@ void initialize( char* directories[], size_t arrLength ){
         fclose( file );
     }
 
-    printf( "Current directories and contents that are available for modification:\n" );
+    printf( "\nCurrent directories and contents that are available for modification:\n" );
     listDirs( directories, arrLength );
 }
 
@@ -238,14 +237,16 @@ void syncDirs( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] ){
 
 int validateMode( char* input, char* output ){
 
-    char mode = (char) tolower( input[0] );
+    char modeStr[2];
+    snprintf( modeStr, sizeof( modeStr ), "%c", tolower( input[0] ));
 
-    if( 0 != strcmp( &mode, "s" ) && 0 != strcmp( &mode, "d" )){
+    // TODO: convert this into a straight character comparison
+    if( 0 != strcmp( modeStr, "s" ) && 0 != strcmp( modeStr, "d" )){
 
         return 1;
     }
 
-    *output = mode;
+    *output = modeStr[0];
     return 0;
 }
 
@@ -254,10 +255,14 @@ int validatePath( char* input, char parsedPath[2][MAX_PATH_LENGTH] ){
     char* invalidSymbols = "\n\r\0";
     int sentinel = 0;
 
-    while( input != NULL){
+    // OnlineGDB has a memory access problem if I try to use the original pointer directly, so we
+    // duplicate it instead.
+    char* token = strdup( input );
+
+    while( token != NULL){
 
         // This splits strings based on the provided delimiter and returns each substring (iteratively) as a token.
-        char* temptok = strsep( &input, "/" );
+        char* temptok = strsep( &token, "/" );
 
         // We explicitly only need to care about one step deeper into the file hierarchy
         // so I can use a static array instead of generecizing with a malloc()
