@@ -58,6 +58,7 @@ int main(){
 
     char* modeName = mode == 'd' ? "De-duplication" : "Synchronization";
     printf( "%s complete! \n", modeName );
+    printf( "\nNew directory structure: \n" );
     listDirs( directories, sizeof( directories ) / sizeof( directories[0] ));
     return 0;
 }
@@ -75,9 +76,10 @@ void dedup( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] ){
     while(( dent = readdir( dir )) != NULL){
 
         char targetPath[MAX_PATH_LENGTH];
-        snprintf( targetPath, sizeof( targetPath ), "%s/%s", target, ( dent->d_name ));
+        char* name = dent->d_name;
+        snprintf( targetPath, sizeof( targetPath ), "%s/%s", target, name );
 
-        if( 0 == exists( targetPath ) || 0 == strcmp( "..", targetPath ) || 0 == strcmp( ".", targetPath )){
+        if( 0 == exists( targetPath ) || 0 == strcmp( "..", name ) || 0 == strcmp( ".", name )){
             continue;
         }
 
@@ -167,12 +169,7 @@ void initialize( char* directories[], size_t arrLength ){
         mkdir( directories[i], ACCESSPERMS);
     }
 
-    // Also note this is basically the sync loop.  For NULL != readdir(paths[1]], if exists then continue, else fopen
-    printf( "Current directories and contents that are available for modification:\n" );
-
     for( int i = 0; i < sizeof( filePaths ) / sizeof( filePaths[0] ); i++ ){
-
-        printf( "home/%s\n", filePaths[i] );
 
         if( exists( filePaths[i] )){
             continue;
@@ -183,15 +180,14 @@ void initialize( char* directories[], size_t arrLength ){
         fclose( file );
     }
 
+    printf( "Current directories and contents that are available for modification:\n" );
+    listDirs( directories, arrLength );
 }
 
 void listDirs( char* directories[], size_t arrLength ){
 
-    printf( "\nNew directory structure: \n" );
-
     DIR* dir;
     struct dirent* dent;
-
 
     for( int i = 0; i < arrLength; ++i ){
 
@@ -199,6 +195,7 @@ void listDirs( char* directories[], size_t arrLength ){
 
         while(( dent = readdir( dir )) != NULL){
 
+            // Ignore the root and parent directory listings.
             if( 0 == strcmp( "..", ( dent->d_name )) || 0 == strcmp( ".", dent->d_name )){
                 continue;
             }
@@ -226,9 +223,10 @@ void syncDirs( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] ){
     while(( dent = readdir( dir )) != NULL){
 
         char targetPath[MAX_PATH_LENGTH];
-        snprintf( targetPath, sizeof( targetPath ), "%s/%s", target, ( dent->d_name ));
+        char* name = dent->d_name;
+        snprintf( targetPath, sizeof( targetPath ), "%s/%s", target, name );
 
-        if( exists( targetPath ) || 0 == strcmp( "..", targetPath ) || 0 == strcmp( ".", targetPath )){
+        if( exists( targetPath ) || 0 == strcmp( "..", name ) || 0 == strcmp( ".", name )){
             continue;
         }
 
