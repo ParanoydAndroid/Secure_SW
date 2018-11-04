@@ -104,26 +104,23 @@ int getPaths( char paths[2][MAX_PATH_LENGTH] ){
 
     while( 2 > sentinel ){
 
-        printf( "Enter File path %i: ", sentinel + 1 );
+        printf( "Enter File path %i (e.g. 'home/dir1'): ", sentinel + 1 );
         if( NULL == fgets( input, sizeof( input ), stdin )){
-            perror( "Please enter a valid path (home/exampleDir" );
+
+            printf( "Please enter a valid path (home/exampleDir\n" );
             continue;
         }
 
         if( 1 == validatePath( input, parsedPaths )){
 
-            perror( "Please enter a valid path (home/exampleDir)" );
+            printf( "Please enter a valid path (home/exampleDir)\n" );
             continue;
         }
-
-//        char str[MAX_PATH_LENGTH];
-//        snprintf(str, sizeof(str), "%s/%s", parsedPaths[0], parsedPaths[1]);
 
         // Now that we have a valid, parsed path, we reconstitute it.
         snprintf( paths[sentinel], sizeof( paths[sentinel] ), "%s/%s", parsedPaths[0], parsedPaths[1] );
 
-        //then we strip the trailing newline.
-        paths[sentinel][strcspn( paths[sentinel], "\n" )] = 0;
+        // TODO: Remove
         printf( "Paths[%i]: %s\n", sentinel, paths[sentinel] );
         sentinel++;
     }
@@ -134,9 +131,9 @@ int getPaths( char paths[2][MAX_PATH_LENGTH] ){
 void initialize(){
 
     char* directories[3] = {"dir1", "dir2", "dir3"};
-    char* filePaths[12] = {"dir1/a.txt", "dir1/b.txt", "dir1/c.txt",
-                           "dir2/c.txt", "dir2/d.txt", "dir2/e.txt",
-                           "dir3/e.txt", "dir3/f.txt", "dir3/a.txt"};
+    char* filePaths[9] = {"dir1/a.txt", "dir1/b.txt", "dir1/c.txt",
+                          "dir2/c.txt", "dir2/d.txt", "dir2/e.txt",
+                          "dir3/e.txt", "dir3/f.txt", "dir3/a.txt"};
 
     for( int i = 0; i < sizeof( directories ) / sizeof( directories[0] ); i++ ){
 
@@ -178,18 +175,18 @@ int validateMode( char* input, char* output ){
 int validatePath( char* input, char parsedPath[2][256] ){
 
     char* invalidSymbols = "\n\r\0";
-    char* token = input;
     int sentinel = 0;
 
-    while( token != NULL){
+    while( input != NULL){
 
         // This splits strings based on the provided delimiter and returns each substring (iteratively) as a token.
-        char* temptok = strsep( &token, "/" );
+        char* temptok = strsep( &input, "/" );
 
         // We explicitly only need to care about one step deeper into the file hierarchy
         // so I can use a static array instead of generecizing with a malloc()
         if( 2 > sentinel ){
 
+            // Strips the trailing newline and changes it into a \0
             temptok[strcspn( temptok, "\n" )] = 0;
             strcpy( parsedPath[sentinel], temptok );
             sentinel++;
@@ -199,7 +196,6 @@ int validatePath( char* input, char parsedPath[2][256] ){
             // ERROR
             // This means strsep is not yet null, yet we've found another token past the first
             // two,  this is invalid
-
             return 1;
         }
     }
@@ -216,13 +212,13 @@ int validatePath( char* input, char parsedPath[2][256] ){
     // We now check for invalid characters in the path provided
     for( int i = 0; i < sentinel; i++ ){
 
-        // We can't strcmp with parsedPath[] directly, since we needa char* not a char*[], so we first store it
-        // in a new char** then check it for invalid symbols
+        // We can't strcmp with parsedPath[] directly, since we need a char* not a char*[], so we first store it
+        // in a new char* then check it for invalid symbols
         char* parseCheck = malloc( sizeof( parsedPath[i] ));
         strcpy( parseCheck, parsedPath[i] );
         char* temp = strsep( &parseCheck, invalidSymbols );
 
-        // TODOD: Don't forge tto remove this.
+        // TODO: Don't forge to remove this.
         printf( "%s\n", temp );
         if( 0 != strcmp( parsedPath[i], temp )){
 
@@ -231,7 +227,13 @@ int validatePath( char* input, char parsedPath[2][256] ){
         }
     }
 
-    // Finally, we check to ensure the referenced directory actually exists.
+    // Finally, we check to ensure the referenced directories actually exist.
+
+    if( 0 != strcmp( parsedPath[0], "home" )){
+
+        return 1;
+    }
+
     if( opendir( parsedPath[1] ) == NULL){
 
         return 1;
