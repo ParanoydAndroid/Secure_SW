@@ -9,16 +9,15 @@
 
 const int MAX_PATH_LENGTH = 256;
 
+void dedup( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] );
 int exists( char* file );
 int getMode( char* mode );
 int getPaths( char paths[2][MAX_PATH_LENGTH] );
 void initialize( char* directories[], size_t arrLength );
+void listDirs( char* directories[], size_t arrLength );
+void syncDirs( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] );
 int validateMode( char* input, char* output );
 int validatePath( char* input, char parsedPath[2][MAX_PATH_LENGTH] );
-
-void syncDirs( char string[256], char string1[256] );
-
-void listDirs();
 
 int main(){
 
@@ -27,13 +26,13 @@ int main(){
 
     char mode;
     int notDone;
-    char paths[2][256];
+    char paths[2][MAX_PATH_LENGTH];
 
     do{
 
         notDone = getMode( &mode );
 
-    } while( notDone );
+    }while( notDone );
 
     getPaths( paths );
 
@@ -41,9 +40,7 @@ int main(){
 
         case (int) 'd':
 
-            printf( "case d\n" );
-
-            // I guess just read directory and then try to delete every file found, accounting for "."
+            dedup( paths[0], paths[1] );
             break;
 
         case (int) 's':
@@ -60,11 +57,36 @@ int main(){
     }
 
     char* modeName = mode == 'd' ? "De-duplication" : "Synchronization";
-    printf( "%s complete: \n", modeName );
-    listDirs();
+    printf( "%s complete! \n", modeName );
+    listDirs( directories, sizeof( directories ) / sizeof( directories[0] ));
     return 0;
 }
 
+void dedup( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] ){
+
+    printf( "De-duplicating home/%s and home/%s...\n", source, target );
+
+    DIR* dir;
+    struct dirent* dent;
+
+    dir = opendir( source );
+
+    // readdir returns the next entry struct in the dir stream until there are none remaining, then it returns NULL
+    while(( dent = readdir( dir )) != NULL){
+
+        char targetPath[MAX_PATH_LENGTH];
+        snprintf( targetPath, sizeof( targetPath ), "%s/%s", target, ( dent->d_name ));
+
+        if( 0 == exists( targetPath ) || 0 == strcmp( "..", targetPath ) || 0 == strcmp( ".", targetPath )){
+            continue;
+        }
+
+        if( 0 != remove( targetPath )){
+
+            perror( "Unknown issue deleting file" );
+        }
+    }
+}
 
 int exists( char* file ){
 
@@ -163,36 +185,57 @@ void initialize( char* directories[], size_t arrLength ){
 
 }
 
-void listDirs(){
+void listDirs( char* directories[], size_t arrLength ){
 
+    printf( "\nNew directory structure: \n" );
+
+    DIR* dir;
+    struct dirent* dent;
+
+
+    for( int i = 0; i < arrLength; ++i ){
+
+        dir = opendir( directories[i] );
+
+        while(( dent = readdir( dir )) != NULL){
+
+            if( 0 == strcmp( "..", ( dent->d_name )) || 0 == strcmp( ".", dent->d_name )){
+                continue;
+            }
+
+            char targetPath[MAX_PATH_LENGTH];
+            snprintf( targetPath, sizeof( targetPath ), "home/%s/%s", directories[i], ( dent->d_name ));
+
+            printf( "%s\n", targetPath );
+        }
+
+        printf( "\n" );
+    }
 }
 
-void syncDirs( char source[256], char target[256] ){
+void syncDirs( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] ){
 
-    // Also note this is basically the sync loop.  For NULL != readdir(paths[1]], if exists then continue, else fopen
     printf( "Synchronizing home/%s and home/%s...\n", source, target );
 
     DIR* dir;
     struct dirent* dent;
 
     dir = opendir( source );
+
+    // readdir returns the next entry struct in the dir stream until there are none remaining, then it returns NULL
     while(( dent = readdir( dir )) != NULL){
 
-        char fullPath[MAX_PATH_LENGTH];
-        snprintf( fullPath, sizeof( fullPath ), "%s/%s", target, ( dent->d_name ));
+        char targetPath[MAX_PATH_LENGTH];
+        snprintf( targetPath, sizeof( targetPath ), "%s/%s", target, ( dent->d_name ));
 
-        if( exists( fullPath ) || 0 == strcmp("..", fullPath) || 0 == strcmp(".", fullPath)){
+        if( exists( targetPath ) || 0 == strcmp( "..", targetPath ) || 0 == strcmp( ".", targetPath )){
             continue;
         }
 
         // We call fopen to create the file, then immediately close the handle because we don't actually want it open.
-        FILE* file = fopen( fullPath, "w+" );
+        FILE* file = fopen( targetPath, "w+" );
         fclose( file );
-
-
     }
-
-
 }
 
 int validateMode( char* input, char* output ){
@@ -208,7 +251,7 @@ int validateMode( char* input, char* output ){
     return 0;
 }
 
-int validatePath( char* input, char parsedPath[2][256] ){
+int validatePath( char* input, char parsedPath[2][MAX_PATH_LENGTH] ){
 
     char* invalidSymbols = "\n\r\0";
     int sentinel = 0;
