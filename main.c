@@ -79,6 +79,8 @@ void dedup( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] ){
         char* name = dent->d_name;
         snprintf( targetPath, sizeof( targetPath ), "%s/%s", target, name );
 
+        // We exclude files that already exist at the target location, and also don't duplicate the
+        // '..' and '.' files that mark parents of the current directory.
         if( 0 == exists( targetPath ) || 0 == strcmp( "..", name ) || 0 == strcmp( ".", name )){
             continue;
         }
@@ -88,6 +90,8 @@ void dedup( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] ){
             perror( "Unknown issue deleting file" );
         }
     }
+
+    closedir( dir );
 }
 
 int exists( char* file ){
@@ -207,6 +211,8 @@ void listDirs( char* directories[], size_t arrLength ){
 
         printf( "\n" );
     }
+
+    closedir(dir);
 }
 
 void syncDirs( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] ){
@@ -233,6 +239,8 @@ void syncDirs( char source[MAX_PATH_LENGTH], char target[MAX_PATH_LENGTH] ){
         FILE* file = fopen( targetPath, "w+" );
         fclose( file );
     }
+
+    closedir( dir );
 }
 
 int validateMode( char* input, char* output ){
@@ -317,6 +325,8 @@ int validatePath( char* input, char parsedPath[2][MAX_PATH_LENGTH] ){
 
         return 1;
     }
+
+    closedir( parsedPath[1] );
 
     return 0;
 }
